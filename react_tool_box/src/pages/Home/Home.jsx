@@ -1,36 +1,10 @@
-import React, { useState, useEffect, useContext } from 'react'
+import React, { useState, useEffect, useContext, useMemo } from 'react'
 import WhealthForm from '../../components/WealthForm/WhealthForm';
 import { formValue } from '../../context/storeContextValue';
 import Loader from '../../components/Loader/Loader'
 import "../../index.css"
 
 
-const getPos = () => {
-    return new Promise((resolve, reject) => {
-
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (succes) => {
-
-
-                    let lat = succes.coords.latitude;
-                    let long = succes.coords.longitude;
-                    const Obj = {
-                        "Latitude": lat,
-                        "Longitude": long
-                    };
-                    resolve(Obj)
-                },
-                (error) => {
-                    reject(error);
-                }
-            );
-        }
-        else {
-            reject(new Error('Geolocation not supported'));
-        }
-    });
-};
 
 export default function Home() {
 
@@ -38,32 +12,31 @@ export default function Home() {
     const [defaultValue, setDefaultValue] = useState("Paris");
     const { value } = useContext(formValue)
     const apiUrl = import.meta.env.VITE_API_OPEN_WEATHER
-    const objLat = getPos();
 
-
-    useEffect(() => {
+    const getData = useMemo(() => {
         const fetchData = async () => {
-
             try {
                 const response = await fetch(`http://api.weatherapi.com/v1/current.json?q=${value || defaultValue}&key=${apiUrl}&lang=fr`);
                 const data = await response.json();
-                setPosition(data)
+                return data
             }
             catch (error) {
                 console.log(error);
             }
         }
-        fetchData();
+        return fetchData();
     }, [value])
+
+    useEffect(() => {
+        getData.then(result => { setPosition(result) })
+    }, [getData])
 
     return (
         <section className='p-4'>
             <WhealthForm />
-
             {
                 position ?
                     (
-
                         <div className='box card_wealth p-4 relative'>
                             <p className='text-white title'>{position.location.name}</p>
                             <p className='text-white title-md'>{position.location.region || position.location.country}</p>
@@ -73,7 +46,6 @@ export default function Home() {
                         </div>
                     )
                     :
-
                     (
                         <Loader />
                     )
